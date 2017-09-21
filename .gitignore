@@ -1,2 +1,6 @@
 **.DS_STORE
 **Icon*
+.idea
+models/alexnet/bvlc_alexnet.caffemodel
+models/c3d/sports1m_finetuning_ucf101.model
+data/cifar_100
