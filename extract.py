@@ -27,11 +27,6 @@ out_dir = oj("/scratch/users/vision/chandan/out", model_name + \
              "_" + name + "_" + time.strftime("%b%d_%H:%M:%S"))
 np.random.seed(13)
 
-# load data
-NUM_IMS = 20000
-chunk_size = 10
-im_ranges_list = [(x, x + chunk_size) for x in np.arange(0, NUM_IMS, chunk_size)]
-
 # choose model
 ims, _ = data_utils.load_data(data_dir, im_range=im_ranges_list[0])
 ims = data_utils.preprocess_data(ims=ims)
@@ -45,17 +40,6 @@ elif model_name == "scattering":  # scattering alone
 
     ims = np.transpose(ims, (0, 3, 1, 2))  # convert NHWC -> NCHW
     placeholder, model = build_model(ims.shape[1:])
-elif model_name == "c3d":  # c3d
-    from models.c3d.c3d_model import build_model
-
-    # convert NHWC -> N,N_frames,H,W,C
-    # note that N get reduced by (num_frames_per_clip-1) - must throw these away for regression part
-    ims = data_utils.sliding_window(ims,
-                                    (num_frames_per_clip, ims.shape[1], ims.shape[2], ims.shape[3]),
-                                    ss=(1, ims.shape[1], ims.shape[2], ims.shape[3]))
-    print('ims reshaped size', ims.shape)
-    placeholder, model = build_model(ims.shape)
-    model = model[layer]
 
 # extract features
 for i in range(len(im_ranges_list)):
@@ -95,11 +79,3 @@ for i in range(len(im_ranges_list)):
         f.create_dataset(str(i), data=features)
 
     logging.info('succesfully completed %s', im_range)
-
-with h5py.File(oj(out_dir, 'features.h5'), 'a') as f:
-    metadata = f.create_dataset("im_ranges_list", data=im_ranges_list)
-    metadata.attrs['model_name'] = model_name
-    metadata.attrs['layer'] = layer
-    metadata.attrs['num_frames_per_clip'] = num_frames_per_clip
-    metadata.attrs['chunk_size'] = chunk_size
-print('completed all')
