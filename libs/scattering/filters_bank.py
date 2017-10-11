@@ -1,4 +1,5 @@
 import os
+
 # Disable Tensorflow's INFO and WARNING messages
 # See http://stackoverflow.com/questions/35911252
 if 'TF_CPP_MIN_LOG_LEVEL' not in os.environ:
@@ -8,11 +9,12 @@ import tensorflow as tf
 import numpy as np
 import scipy.fftpack as fft
 
+
 # All code for the filters bank directly adapted from https://github.com/edouardoyallon/pyscatwave
 # Copyright (c) 2017, Eugene Belilovsky (INRIA), Edouard Oyallon (ENS) and Sergey Zagoruyko (ENPC)
 # All rights reserved.
 
-
+# L is number of discrete steps to break wavelet angle theta into on [0, 2pi]
 def filters_bank(M, N, J, L=8):
     filters = {}
     filters['psi'] = []
@@ -20,25 +22,36 @@ def filters_bank(M, N, J, L=8):
     offset_unpad = 0
     for j in range(J):
         for theta in range(L):
+            # psi corresponds to the wavelet
             psi = {}
             psi['j'] = j
             psi['theta'] = theta
-            psi_signal = morlet_2d(M, N, 0.8 * 2**j, (int(L - L / 2 - 1) - theta) * np.pi / L, 3.0 / 4.0 * np.pi / 2**j,offset=offset_unpad)  # The 5 is here just to match the LUA implementation :)
+            psi_signal = morlet_2d(M, N, 0.8 * 2 ** j,
+                                   (int(L - L / 2 - 1) - theta) * np.pi / L,
+                                   3.0 / 4.0 * np.pi / 2 ** j,
+                                   offset=offset_unpad)  # The 5 is here just to match the LUA implementation :)
             psi_signal_fourier = fft.fft2(psi_signal)
             for res in range(j + 1):
                 psi_signal_fourier_res = crop_freq(psi_signal_fourier, res)
-                psi[res] = tf.constant(np.stack((np.real(psi_signal_fourier_res), np.imag(psi_signal_fourier_res)), axis=2))
-                psi[res] = tf.div(psi[res], (M * N // 2**(2 * j)), name="psi_theta%s_j%s" % (theta, j))
+                psi[res] = tf.constant(
+                    np.stack((np.real(psi_signal_fourier_res),
+                              np.imag(psi_signal_fourier_res)), axis=2))
+                psi[res] = tf.div(psi[res], (M * N // 2 ** (2 * j)),
+                                  name="psi_theta%s_j%s" % (theta, j))
             filters['psi'].append(psi)
 
     filters['phi'] = {}
-    phi_signal = gabor_2d(M, N, 0.8 * 2**(J - 1), 0, 0, offset=offset_unpad)
+    phi_signal = gabor_2d(M, N, 0.8 * 2 ** (J - 1), 0, 0, offset=offset_unpad)
     phi_signal_fourier = fft.fft2(phi_signal)
     filters['phi']['j'] = J
     for res in range(J):
-        phi_signal_fourier_res = crop_freq(phi_signal_fourier, res)
-        filters['phi'][res] = tf.constant(np.stack((np.real(phi_signal_fourier_res), np.imag(phi_signal_fourier_res)), axis=2))
-        filters['phi'][res] = tf.div(filters['phi'][res], (M * N // 2 ** (2 * J)), name="phi_res%s" % res)
+        phi_signal_fourier_res = crop_freq(phi_signal_fourier, res)  # crop frequency based on scale
+        filters['phi'][res] = tf.constant(
+            np.stack((np.real(phi_signal_fourier_res),  # get real and imaginary part
+                      np.imag(phi_signal_fourier_res)),
+                     axis=2))
+        filters['phi'][res] = tf.div(filters['phi'][res],  # scale the filter
+                                     (M * N // 2 ** (2 * J)), name="phi_res%s" % res)
 
     return filters
 
@@ -54,9 +67,9 @@ def crop_freq(x, res):
     start_x = int(M * 2 ** (-res - 1))
     len_y = int(N * (1 - 2 ** (-res)))
     start_y = int(N * 2 ** (-res - 1))
-    mask[start_x:start_x + len_x,:] = 0
+    mask[start_x:start_x + len_x, :] = 0
     mask[:, start_y:start_y + len_y] = 0
-    x = np.multiply(x,mask)
+    x = np.multiply(x, mask)
 
     for k in range(int(M / 2 ** res)):
         for l in range(int(N / 2 ** res)):
@@ -94,6 +107,6 @@ def gabor_2d(M, N, sigma, theta, xi, slant=1.0, offset=0, fft_shift=None):
     norm_factor = (2 * 3.1415 * sigma * sigma / slant)
     gab = gab / norm_factor
 
-    if (fft_shift):
+    if fft_shift:
         gab = np.fft.fftshift(gab, axes=(0, 1))
     return gab

@@ -19,6 +19,7 @@ def stack_real_imag(x):
 
 
 def compute_fft(x, direction="C2C", inverse=False):
+    # R is real, C is complex
     if direction == 'C2R':
         inverse = True
 
@@ -100,8 +101,8 @@ class Scattering(object):
         # Create the filters
         filters = filters_bank(self.M_padded, self.N_padded, J)
 
-        self.Psi = filters['psi']
-        self.Phi = [filters['phi'][j] for j in range(J)]
+        self.Psi = filters['psi']  # rotated lines
+        self.Phi = [filters['phi'][j] for j in range(J)]  # no orientations, get low frequency info
 
     def _prepare_padding_size(self, s):
         M = s[-2]
@@ -148,20 +149,22 @@ class Scattering(object):
         S = []
         U_r = pad(x)
 
+        # convolution in image domain is product in fourier domain
+        # compute in fourier domain because it's faster
         U_0_c = compute_fft(U_r, 'C2C')  # We trick here with U_r and U_2_c
-        U_1_c = periodize(cdgmm(U_0_c, phi[0]), 2 ** J)
+        U_1_c = periodize(cdgmm(U_0_c, phi[0]), 2 ** J)  # low frequency info
         U_J_r = compute_fft(U_1_c, 'C2R')
 
-        S.append(unpad(U_J_r))
+        S.append(unpad(U_J_r))  # 1st filter
         n = n + 1
 
-        for n1 in range(len(psi)):
+        for n1 in range(len(psi)):  # loop over orientation filters
             j1 = psi[n1]['j']
-            U_1_c = cdgmm(U_0_c, psi[n1][0])
+            U_1_c = cdgmm(U_0_c, psi[n1][0])  # (probably) does convolution
             if j1 > 0:
                 U_1_c = periodize(U_1_c, k=2 ** j1)
-            U_1_c = compute_fft(U_1_c, 'C2C', inverse=True)
-            U_1_c = compute_fft(modulus(U_1_c), 'C2C')
+            U_1_c = compute_fft(U_1_c, 'C2C', inverse=True)  # inverse fourier, to get it back
+            U_1_c = compute_fft(modulus(U_1_c), 'C2C')  # use modulus
 
             # Second low pass filter
             U_2_c = periodize(cdgmm(U_1_c, phi[j1]), k=2 ** (J - j1))
@@ -169,7 +172,7 @@ class Scattering(object):
             S.append(unpad(U_J_r))
             n = n + 1
 
-            for n2 in range(len(psi)):
+            for n2 in range(len(psi)):  # loop over orientation filters again
                 j2 = psi[n2]['j']
                 if j1 < j2:
                     U_2_c = periodize(cdgmm(U_1_c, psi[n2][j1]), k=2 ** (j2 - j1))
