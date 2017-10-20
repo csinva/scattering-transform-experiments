@@ -120,8 +120,8 @@ x = tf.placeholder(tf.float32, (None,) + xdim)
 #conv1
 #conv(11, 11, 96, 4, 4, padding='VALID', name='conv1')
 k_h = 11; k_w = 11; c_o = 96; s_h = 4; s_w = 4
-conv1W = tf.Variable(net_data["conv1"][0])
-conv1b = tf.Variable(net_data["conv1"][1])
+conv1W = tf.Variable(net_data["conv1"][0], trainable = False)
+conv1b = tf.Variable(net_data["conv1"][1], trainable = False)
 conv1_in = conv(x, conv1W, conv1b, k_h, k_w, c_o, s_h, s_w, padding="SAME", group=1)
 conv1 = tf.nn.relu(conv1_in)
 
@@ -143,8 +143,8 @@ maxpool1 = tf.nn.max_pool(lrn1, ksize=[1, k_h, k_w, 1], strides=[1, s_h, s_w, 1]
 #conv2
 #conv(5, 5, 256, 1, 1, group=2, name='conv2')
 k_h = 5; k_w = 5; c_o = 256; s_h = 1; s_w = 1; group = 2
-conv2W = tf.Variable(net_data["conv2"][0])
-conv2b = tf.Variable(net_data["conv2"][1])
+conv2W = tf.Variable(net_data["conv2"][0], trainable = False)
+conv2b = tf.Variable(net_data["conv2"][1], trainable = False)
 conv2_in = conv(maxpool1, conv2W, conv2b, k_h, k_w, c_o, s_h, s_w, padding="SAME", group=group)
 conv2 = tf.nn.relu(conv2_in)
 
@@ -166,16 +166,16 @@ maxpool2 = tf.nn.max_pool(lrn2, ksize=[1, k_h, k_w, 1], strides=[1, s_h, s_w, 1]
 #conv3
 #conv(3, 3, 384, 1, 1, name='conv3')
 k_h = 3; k_w = 3; c_o = 384; s_h = 1; s_w = 1; group = 1
-conv3W = tf.Variable(net_data["conv3"][0])
-conv3b = tf.Variable(net_data["conv3"][1])
+conv3W = tf.Variable(net_data["conv3"][0], trainable = False)
+conv3b = tf.Variable(net_data["conv3"][1], trainable = False)
 conv3_in = conv(maxpool2, conv3W, conv3b, k_h, k_w, c_o, s_h, s_w, padding="SAME", group=group)
 conv3 = tf.nn.relu(conv3_in)
 
 #conv4
 #conv(3, 3, 384, 1, 1, group=2, name='conv4')
 k_h = 3; k_w = 3; c_o = 384; s_h = 1; s_w = 1; group = 2
-conv4W = tf.Variable(net_data["conv4"][0])
-conv4b = tf.Variable(net_data["conv4"][1])
+conv4W = tf.Variable(net_data["conv4"][0], trainable = False)
+conv4b = tf.Variable(net_data["conv4"][1], trainable = False)
 conv4_in = conv(conv3, conv4W, conv4b, k_h, k_w, c_o, s_h, s_w, padding="SAME", group=group)
 conv4 = tf.nn.relu(conv4_in)
 
@@ -183,8 +183,8 @@ conv4 = tf.nn.relu(conv4_in)
 #conv5
 #conv(3, 3, 256, 1, 1, group=2, name='conv5')
 k_h = 3; k_w = 3; c_o = 256; s_h = 1; s_w = 1; group = 2
-conv5W = tf.Variable(net_data["conv5"][0])
-conv5b = tf.Variable(net_data["conv5"][1])
+conv5W = tf.Variable(net_data["conv5"][0], trainable = False)
+conv5b = tf.Variable(net_data["conv5"][1], trainable = False)
 conv5_in = conv(conv4, conv5W, conv5b, k_h, k_w, c_o, s_h, s_w, padding="SAME", group=group)
 conv5 = tf.nn.relu(conv5_in)
 
@@ -262,7 +262,7 @@ l_acc = []
 t_acc = []
 with tf.Session() as sess:
   sess.run(tf.global_variables_initializer())
-  for i in range(10000):
+  for i in range(100000):
     indices = np.random.randint(0, 50000,size = 1000)
     batch = [train_x[indices], train_y[indices]]
     if i % 1 == 0:
@@ -270,17 +270,17 @@ with tf.Session() as sess:
           x: batch[0], y_: batch[1], keep_prob:1.0})
       print('step %d, training accuracy %g' % (i, train_accuracy))
       l_acc.append(train_accuracy)
-    train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob:0.9})
+    train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob:0.6})
     if i % 250 == 0:
       test_accuracy = accuracy.eval(feed_dict={
         x: test_x, y_: test_y, keep_prob: 1.0})
       print('test accuracy %g' % test_accuracy)
       t_acc.append(test_accuracy)
 
-  save_path = saver.save(sess, "cifar.ckpt")
+  save_path = saver.save(sess, "frozen_cifar.ckpt")
 plt.plot(l_acc)
-plt.savefig('l_acc.png')
+plt.savefig('frozen_train_acc.png')
 plt.close()
 plt.plot(t_acc)
-plt.savefig('t_acc.png')
+plt.savefig('frozen_test_acc.png')
 plt.close()

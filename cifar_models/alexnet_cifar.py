@@ -262,7 +262,7 @@ l_acc = []
 t_acc = []
 with tf.Session() as sess:
   sess.run(tf.global_variables_initializer())
-  for i in range(10000):
+  for i in range(100000):
     indices = np.random.randint(0, 50000,size = 1000)
     batch = [train_x[indices], train_y[indices]]
     if i % 1 == 0:
@@ -270,7 +270,7 @@ with tf.Session() as sess:
           x: batch[0], y_: batch[1], keep_prob:1.0})
       print('step %d, training accuracy %g' % (i, train_accuracy))
       l_acc.append(train_accuracy)
-    train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob:0.9})
+    train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob:0.6})
     if i % 250 == 0:
       test_accuracy = accuracy.eval(feed_dict={
         x: test_x, y_: test_y, keep_prob: 1.0})

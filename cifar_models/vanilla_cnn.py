@@ -191,9 +191,9 @@ with tf.Session() as sess:
       t_acc.append(test_accuracy)
   save_path = saver.save(sess, "vanilla.ckpt")
 plt.plot(l_acc)
-plt.savefig('l_acc.png')
+plt.savefig('vanilla_l_acc.png')
 plt.close()
 plt.plot(t_acc)
-plt.savefig('t_acc.png')
+plt.savefig('vanilla_t_acc.png')
 plt.close()
 
