@@ -23,7 +23,7 @@ class Scattering(object):
         pre_pad: if set to True, module expect pre-padded images
         jit: compile kernels on the fly for speed
     """
-    def __init__(self, M, N, J, pre_pad=False, jit=True):
+    def __init__(self, M, N, J, L=8, pre_pad=False, jit=True):
         super(Scattering, self).__init__()
         self.M, self.N, self.J = M, N, J
         self.pre_pad = pre_pad
@@ -37,7 +37,7 @@ class Scattering(object):
         self.padding_module = pad_function(2**J)
 
         # Create the filters
-        filters = filters_bank(self.M_padded, self.N_padded, J)
+        filters = filters_bank(self.M_padded, self.N_padded, J, L)
 
         self.Psi = filters['psi']
         self.Phi = [filters['phi'][j] for j in range(J)]

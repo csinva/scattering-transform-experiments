@@ -12,7 +12,7 @@ import scipy.fftpack as fft
 
 
 
-def filters_bank(M, N, J, L=8):
+def filters_bank(M, N, J, L):
     filters = {}
     filters['psi'] = []
 
