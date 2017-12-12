@@ -69,3 +69,8 @@ from .wrn import *
 from .preresnet import *
 from .densenet import *
 from .alexscat import *
+from .scatfirst import *
+from .scatfirst2 import *
+from .scatfirst3 import *
+from .scatfirst4 import *
+from .scatonly import *
