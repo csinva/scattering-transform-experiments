@@ -58,7 +58,7 @@ parser.add_argument('-c', '--checkpoint', default='checkpoint', type=str, metava
 parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 # Architecture
-parser.add_argument('--arch', '-a', metavar='ARCH', default='alexnet',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='scatfirst3',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +

@@ -58,7 +58,7 @@ parser.add_argument('-c', '--checkpoint', default='checkpoint', type=str, metava
 parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 # Architecture
-parser.add_argument('--arch', '-a', metavar='ARCH', default='alexnet',
+parser.add_argument('--arch', '-a', metavar='ARCH', default='scatfirst2',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -173,7 +173,7 @@ def main():
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
     # Resume
-    title = 'cifar-100-' + args.arch
+    title = 'cifar-10-' + args.arch
     if args.resume:
         # Load checkpoint.
         print('==> Resuming from checkpoint..')
