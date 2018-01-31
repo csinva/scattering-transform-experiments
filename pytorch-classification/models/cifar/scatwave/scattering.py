@@ -25,7 +25,7 @@ class Scattering(object):
     """
     def __init__(self, M, N, J, L=8, pre_pad=False, jit=True):
         super(Scattering, self).__init__()
-        self.M, self.N, self.J = M, N, J
+        self.M, self.N, self.J, self.L = M, N, J, L
         self.pre_pad = pre_pad
         self.jit = jit
         self.fft = Fft()
@@ -114,7 +114,7 @@ class Scattering(object):
 
         S = input.new(input.size(0),
                       input.size(1),
-                      1 + 8*J + 8*8*J*(J - 1) // 2,
+                      1 + self.L*J + self.L*self.L*J*(J - 1) // 2,
                       self.M_padded//(2**J)-2,
                       self.N_padded//(2**J)-2)
         U_r = pad(input)

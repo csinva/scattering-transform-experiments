@@ -119,7 +119,7 @@ class Modulus(object):
 
     def __call__(self, input):
         if not self.jit or not isinstance(input, torch.cuda.FloatTensor):
-            print "BROKEN MOD"
+            #print "BROKEN MOD"
             norm = input.norm(2, input.dim() - 1)
             return torch.cat([norm, norm.new(norm.size()).zero_()], input.dim() - 1)
 

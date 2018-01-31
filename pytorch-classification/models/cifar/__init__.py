@@ -74,3 +74,5 @@ from .scatfirst2 import *
 from .scatfirst3 import *
 from .scatfirst4 import *
 from .scatonly import *
+from .scatfirst_fnum import *
+from .alexscat_fnum import *
