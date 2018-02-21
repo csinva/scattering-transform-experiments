@@ -83,7 +83,7 @@ class DeepDream():
         Produces an image that minimizes the loss of a convolution
         operation for a specific layer and filter
     """
-    def __init__(self, model, selected_layer, selected_filter, im_path, a = None):
+    def __init__(self, model, selected_layer, selected_filter, im_path = False, a = None):
         self.model = model
         self.model.eval()
         self.selected_layer = selected_layer
@@ -91,7 +91,11 @@ class DeepDream():
         self.conv_output = 0
         self.a = a
         # Generate a random image
-        self.created_image = cv2.imread(im_path, 1)
+        if im_path:
+        	self.created_image = cv2.imread(im_path, 1)
+        else:
+        	#self.created_image = np.zeros((32,32,3))
+        	self.created_image = cv2.randn(np.zeros((32,32,3)), (0), (99))
         # Hook the layers to get result of the convolution
         self.hook_layer()
         # Create the folder to export images if not exists
@@ -154,32 +158,34 @@ if __name__ == '__main__':
     # Try it with a smaller image
     os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 
-    cnn_layer = 8
-    filter_pos = 4
+    cnn_layer = 10
+    filter_pos = 1
 
-    im_path = 'pytorch-cnn-visualizations/input_images/cat_dog.png'
+    #im_path = 'pytorch-cnn-visualizations/input_images/cat_dog.png'
+
+
     #im_path = 'pytorch-cnn-visualizations/input_images/dd_tree.jpg'
     #im_path = 'cifar_image.png'
 
     # Fully connected layer is not needed
     #pretrained_model = models.vgg19(pretrained=True).features
-
+    im_path = None
 
     #ALEXNET HERE
-    #best_alexnet = torch.load('model_best.pth.tar')
-    #a = models.__dict__["alexnet"](num_classes=100)
-    #a = torch.nn.DataParallel(a).cuda()
-    #a.load_state_dict(best_alexnet['state_dict'])
-    #dd = DeepDream(a.module.features, cnn_layer, filter_pos, im_path)
+    best_alexnet = torch.load('model_best.pth.tar')
+    a = models.__dict__["alexnet"](num_classes=100)
+    a = torch.nn.DataParallel(a).cuda()
+    a.load_state_dict(best_alexnet['state_dict'])
+    dd = DeepDream(a.module.features, cnn_layer, filter_pos, im_path)
 
 
     #ALEXSCAT HERE
     #NOTE THAT ALEXSCAT_FNUM SELF.N MUST CHANGE TO FIT IMAGE SIZE. BRING THAT UP WITH CHANDAN
-    best_ascat = torch.load("checkpoints/cifar100/alexscat_j2l2/model_best.pth.tar")
-    a = models.__dict__["alexscat_fnum"](num_classes=100,n=224)
-    a = torch.nn.DataParallel(a).cuda()
-    a.load_state_dict(best_ascat['state_dict'])
-    dd = DeepDream(a.module.features, cnn_layer, filter_pos, im_path, a.module)
+    #best_ascat = torch.load("checkpoints/cifar100/alexscat_j2l2/model_best.pth.tar")
+    #a = models.__dict__["alexscat_fnum"](num_classes=100,n=32)
+    #a = torch.nn.DataParallel(a).cuda()
+    #a.load_state_dict(best_ascat['state_dict'])
+    #dd = DeepDream(a.module.features, cnn_layer, filter_pos, im_path, a.module)
 
 
     # This operation can also be done without Pytorch hooks

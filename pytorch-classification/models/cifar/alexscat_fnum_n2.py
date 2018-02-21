@@ -8,13 +8,13 @@ from .scatwave.scattering import Scattering
 
 
 
-__all__ = ['alexscat_fnum']
+__all__ = ['alexscat_fnum_n2']
 
 
-class AlexScat_FNum(nn.Module):
+class AlexScat_FNum_n2(nn.Module):
 
     def __init__(self, num_classes=10, n = 32, j = 2, l = 2):
-        super(AlexScat_FNum, self).__init__()
+        super(AlexScat_FNum_n2, self).__init__()
         self.J = j
         self.N = n
         self.L = l
@@ -46,12 +46,13 @@ class AlexScat_FNum(nn.Module):
             nn.Conv2d(self.n_flayer, 192, kernel_size=5, padding=2),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(192, 384, kernel_size=3, padding=1),
+            # nn.Conv2d(192, 384, kernel_size=3, padding=1),
+            nn.Conv2d(192, 256, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
-            nn.Conv2d(384, 256, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
+            # nn.Conv2d(384, 256, kernel_size=3, padding=1),
+            # nn.ReLU(inplace=True),
+            # nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            # nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.classifier = nn.Linear(256, num_classes)
@@ -74,14 +75,14 @@ class AlexScat_FNum(nn.Module):
         return x
 
 
-def alexscat_fnum(**kwargs):
+def alexscat_fnum_n2(**kwargs):
     """AlexNet model architecture from the
     `"One weird trick..." <https://arxiv.org/abs/1404.5997>`_ paper.
     """
-    model = AlexScat_FNum(**kwargs)
+    model = AlexScat_FNum_n2(**kwargs)
     return model
 
 
 
 
-#apython run_cifar100.py --arch alexnet --checkpoint checkpoint/alexnet; apython run_cifar100.py --ascat_j 2 --ascat_l 2 --checkpoint checkpoint/j2l2; apython run_cifar100.py --ascat_j 2 --ascat_l 3 --checkpoint checkpoint/j2l3; apython run_cifar100.py --ascat_j 2 --ascat_l 4 --checkpoint checkpoint/j2l4
+#apython run_cifar100.py --arch alexnet_n2 --checkpoint checkpoint/alexnet_n2; apython run_cifar100.py --arch alexscat_fnum_n2 --ascat_j 2 --ascat_l 2 --checkpoint checkpoint/j2l2_n2; apython run_cifar100.py --arch alexscat_fnum_n2 --ascat_j 2 --ascat_l 3 --checkpoint checkpoint/j2l3_n2; apython run_cifar100.py --arch alexscat_fnum_n2 --ascat_j 2 --ascat_l 4 --checkpoint checkpoint/j2l4_n2

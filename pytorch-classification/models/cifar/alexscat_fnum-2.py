@@ -8,13 +8,13 @@ from .scatwave.scattering import Scattering
 
 
 
-__all__ = ['alexscat_fnum']
+__all__ = ['alexscat_fnum_n2']
 
 
-class AlexScat_FNum(nn.Module):
+class AlexScat_FNum_n2(nn.Module):
 
     def __init__(self, num_classes=10, n = 32, j = 2, l = 2):
-        super(AlexScat_FNum, self).__init__()
+        super(AlexScat_FNum_n2, self).__init__()
         self.J = j
         self.N = n
         self.L = l
@@ -74,11 +74,11 @@ class AlexScat_FNum(nn.Module):
         return x
 
 
-def alexscat_fnum(**kwargs):
+def alexscat_fnum_n2(**kwargs):
     """AlexNet model architecture from the
     `"One weird trick..." <https://arxiv.org/abs/1404.5997>`_ paper.
     """
-    model = AlexScat_FNum(**kwargs)
+    model = AlexScat_FNum_n2(**kwargs)
     return model
 
 
