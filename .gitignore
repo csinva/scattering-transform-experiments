@@ -4,6 +4,12 @@
 models/alexnet/bvlc_alexnet.caffemodel
 models/c3d/sports1m_finetuning_ucf101.model
 data/cifar_100
+pytorch-classification/data/cifar_100
 **__pycache__
 **.ipynb_checkpoints
 **.tar
+**.png
+**.jpg
+**.eps
+**.gz
+**.pyc
