@@ -1,31 +1,24 @@
 import os
-#import cv2
 import matplotlib.pyplot as plt
 import torch
 from torch.optim import SGD
 from torchvision import models
-
 import models.cifar as models
-
 import numpy as np 
 from torch.autograd import Variable
 import torchvision.transforms as transforms
 import torch.utils.data as data
 import torch.nn as nn
-
-
 import torchvision.datasets as datasets
-
 import copy
-
 from utils import AverageMeter, accuracy
-
-#image = cv2.randn(np.zeros((32,32,3)), (0), (0.5,0.5,0.5))
-#image = np.zeros((32,32,3)) + 0.5
 
 
 def test(testloader, model, criterion, epoch, use_cuda):
-
+    '''
+    Evaluates the test accuracy of the model. This is used to evaluate the importance of a filter after removing it from the model.
+    This code is taken directly from the training code that plots the test error.
+    '''
     losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
@@ -60,6 +53,9 @@ def test(testloader, model, criterion, epoch, use_cuda):
 
 
 def make_image(): 
+    '''
+    Makes a noisy image and turns it into a torch array so we can later turn it into a variable and calculate gradients on it and apply them.
+    '''
     images = []
     for _ in range(3):
         image = np.random.randn(11,11)/5+0.5
@@ -72,13 +68,10 @@ def make_image():
     torch_image = torch_image.unsqueeze_(0)
     return torch_image
 
-
-
 #im_as_var = Variable(torch_image.cuda(), requires_grad=True)
 
 
-
-
+#This code prepares the data to evaluate the test accuracy. This was taken directly from the training code.
 transform_test = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
@@ -90,6 +83,7 @@ criterion = nn.CrossEntropyLoss()
 epoch = 164
 
 
+#This code loads the model in and extracts the conv1_weights
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 best_ascat = torch.load("checkpoint/j2l2_n2/model_best.pth.tar")
 model = models.__dict__["alexscat_fnum_n2"](num_classes=100,n=32,j=2,l=2)
@@ -98,12 +92,17 @@ model.load_state_dict(best_ascat['state_dict'])
 conv1_weights = best_ascat['state_dict']['module.first_layer.0.weight'].cpu().numpy()
 tensor = np.swapaxes(conv1_weights,1,3)
 
-
+#This is another copy of the same model so we can alter it.
 model2 = models.__dict__["alexscat_fnum_n2"](num_classes=100,n=32,j=2,l=2)
 model2 = torch.nn.DataParallel(model2).cuda()
 
 
+best_ascat2 = copy.deepcopy(best_ascat['state_dict'])   
+model2.load_state_dict(best_ascat2)
+losses, top1 = test(testloader, model2, criterion, epoch, True)
+allFilters = top1
 
+#This code just gets the importance scores of each filter
 scores = []
 for f_num in range(model.module.n_flayer - model.module.nfscat*3):
 	best_ascat2 = copy.deepcopy(best_ascat['state_dict'])	
@@ -112,12 +111,14 @@ for f_num in range(model.module.n_flayer - model.module.nfscat*3):
 	losses, top1 = test(testloader, model2, criterion, epoch, True)
 	scores.append(top1)
 
+
 scores = np.array(scores)
 torch_image = make_image()
 
 #if not os.path.exists('../importance/j2l3'):
 #    os.makedirs('../importance/j2l3')
 
+#This code goes through and plots each filter.
 num_cols = 8
 num_rows = 1 + len(scores)//num_cols
 fig = plt.figure(figsize=(num_cols, num_rows))
@@ -128,13 +129,13 @@ for importance, f_num in enumerate(np.argsort(scores)):
     ax1.axis('off')
     ax1.set_xticklabels([])
     ax1.set_yticklabels([])
-    ax1.set_title(str(scores[f_num]))
+    ax1.set_title(str(allFilters - scores[f_num]))
 plt.subplots_adjust(wspace=1.0, hspace=0.1)
-plt.savefig("filters_alexscat_n2_j2l2.png")
+plt.savefig("TEST_SCHANNEL.png")
 
 plt.show()
 
-
+#This code applies the maximal activation for each filter and then plots the resulting image.
 fig = plt.figure(figsize=(num_cols, num_rows))
 REGULARIZATION = 0.0001
 for importance, f_num in enumerate(np.argsort(scores)):
@@ -169,9 +170,9 @@ for importance, f_num in enumerate(np.argsort(scores)):
     ax1.axis('off')
     ax1.set_xticklabels([])
     ax1.set_yticklabels([])
-    ax1.set_title(str(scores[f_num]))
+    ax1.set_title(str(allFilters - scores[f_num]))
 plt.subplots_adjust(wspace=1.0, hspace=0.1)
-plt.savefig("deep_dream_alexscat_n2_j2l2.png")
+plt.savefig("TEST_SCHANNEL.png")
 
 plt.show()
 
