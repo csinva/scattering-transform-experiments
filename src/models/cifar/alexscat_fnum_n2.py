@@ -35,7 +35,7 @@ class AlexScat_FNum_n2(nn.Module):
 
         if self.nfscat*3 < self.n_flayer:        
             self.first_layer = nn.Sequential(
-                nn.Conv2d(3, self.n_flayer - self.nfscat*3, kernel_size=11, stride=4, padding=5),
+                nn.Conv2d(3, int(self.n_flayer - self.nfscat*3), kernel_size=11, stride=4, padding=5),
                 nn.ReLU(inplace=True)
                 )
         else:

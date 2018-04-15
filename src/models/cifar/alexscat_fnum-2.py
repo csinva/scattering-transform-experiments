@@ -32,12 +32,11 @@ class AlexScat_FNum_n2(nn.Module):
         #3 1 21 ???
 
         self.n_flayer = 64 #NORMALLY 64 FOR NORMAL ALEXNET
-
-        if self.nfscat*3 < self.n_flayer:        
+        if self.nfscat * 3 < self.n_flayer:        
             self.first_layer = nn.Sequential(
-                nn.Conv2d(3, self.n_flayer - self.nfscat*3, kernel_size=11, stride=4, padding=5),
+                nn.Conv2d(3, int(self.n_flayer - self.nfscat*3), kernel_size=11, stride=4, padding=5),
                 nn.ReLU(inplace=True)
-                )
+            )
         else:
             self.n_flayer = self.nfscat*3
 
@@ -78,6 +77,7 @@ def alexscat_fnum_n2(**kwargs):
     """AlexNet model architecture from the
     `"One weird trick..." <https://arxiv.org/abs/1404.5997>`_ paper.
     """
+    print('reached')
     model = AlexScat_FNum_n2(**kwargs)
     return model
 

@@ -79,4 +79,4 @@ from .alexscat_fnum import *
 from .alexscat2first import *
 from .alexscat_fnum_n2 import *
 from .alexnet_n2 import *
-from .alexscat_fnum_schannel.py import *
+# from .alexscat_fnum_schannel.py import *
