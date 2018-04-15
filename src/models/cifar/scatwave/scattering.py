@@ -7,8 +7,8 @@ __all__ = ['Scattering']
 
 import warnings
 import torch
-from .utils import cdgmm, Modulus, Periodize, Fft
-from .filters_bank import filters_bank
+from scat_utils import cdgmm, Modulus, Periodize, Fft
+from filters_bank import filters_bank
 from torch.legacy.nn import SpatialReflectionPadding as pad_function
 
 
