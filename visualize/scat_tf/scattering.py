@@ -93,15 +93,15 @@ class Scattering(object):
         J: number of layers
     """
 
-    def __init__(self, M, N, J, check=False):
+    def __init__(self, M, N, J, L, check=False):
         super(Scattering, self).__init__()
-        self.M, self.N, self.J = M, N, J
+        self.M, self.N, self.J, self.L = M, N, J, L
         self.check = check  # for tests
 
         self._prepare_padding_size([1, 1, M, N])
 
         # Create the filters
-        filters = filters_bank(self.M_padded, self.N_padded, J)
+        filters = filters_bank(self.M_padded, self.N_padded, J, L)
 
         self.Psi = filters['psi']
         self.Phi = [filters['phi'][j] for j in range(J)]
