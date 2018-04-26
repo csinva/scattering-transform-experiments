@@ -13,3 +13,4 @@ pytorch-classification/data/cifar_100
 **.eps
 **.gz
 **.pyc
+**.npy
