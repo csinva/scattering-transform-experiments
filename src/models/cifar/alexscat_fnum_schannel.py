@@ -8,13 +8,13 @@ from .scatwave.scattering import Scattering
 
 
 
-__all__ = ['alexscat_fnum_n2']
+__all__ = ['alexscat_fnum_schannel']
 
 
-class AlexScat_FNum_n2(nn.Module):
+class AlexScat_FNum_SChannel(nn.Module):
 
     def __init__(self, num_classes=10, n = 32, j = 2, l = 2):
-        super(AlexScat_FNum_n2, self).__init__()
+        super(AlexScat_FNum_SChannel, self).__init__()
         self.J = j
         self.N = n
         self.L = l
@@ -31,11 +31,11 @@ class AlexScat_FNum_n2(nn.Module):
         #1 10 33
         #3 1 21 ???
 
-        self.n_flayer = 64 #NORMALLY 64 FOR NORMAL ALEXNET
+        self.n_flayer = 63 #NORMALLY 64 FOR NORMAL ALEXNET
 
         if self.nfscat*3 < self.n_flayer:        
             self.first_layer = nn.Sequential(
-                nn.Conv2d(3, self.n_flayer - self.nfscat*3, kernel_size=11, stride=4, padding=5),
+                nn.Conv2d(1, (self.n_flayer - self.nfscat*3) // 3, kernel_size=11, stride=4, padding=5),
                 nn.ReLU(inplace=True)
                 )
         else:
@@ -48,22 +48,23 @@ class AlexScat_FNum_n2(nn.Module):
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.Conv2d(192, 384, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
-            # nn.Conv2d(384, 256, kernel_size=3, padding=1),
-            # nn.ReLU(inplace=True),
-            # nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            # nn.ReLU(inplace=True),
+            nn.Conv2d(384, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
-        self.classifier = nn.Linear(384, num_classes)
+        self.classifier = nn.Linear(256, num_classes)
 
     def forward(self, x):
 
         x2 = torch.autograd.Variable(self.scat(x.data), requires_grad = False)
         x2 = x2.view(x.size(0), self.nfscat*3, self.nspace, self.nspace)
-
         if self.nfscat*3 < self.n_flayer:
-            x1 = self.first_layer(x)
-            x = torch.cat([x1,x2], 1)
+            x3 = self.first_layer(x[:,0,:,:].unsqueeze(1))
+            x4 = self.first_layer(x[:,1,:,:].unsqueeze(1))
+            x5 = self.first_layer(x[:,2,:,:].unsqueeze(1))
+            x = torch.cat([x3,x4,x5,x2], 1)
         else:
             x = x2
 
@@ -74,18 +75,14 @@ class AlexScat_FNum_n2(nn.Module):
         return x
 
 
-def alexscat_fnum_n2(**kwargs):
+def alexscat_fnum_schannel(**kwargs):
     """AlexNet model architecture from the
     `"One weird trick..." <https://arxiv.org/abs/1404.5997>`_ paper.
     """
-    model = AlexScat_FNum_n2(**kwargs)
+    model = AlexScat_FNum_SChannel(**kwargs)
     return model
 
 
-#apython run_cifar100.py -a alexscat2_sep --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/alexscat2_sep_extra;apython run_cifar100.py -a alexnet_n2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/alexnet_n2_extra;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l2_n2_extra;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 3 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l3_n2_extra;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 4 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l4_n2_extra;apython run_cifar100.py -a alexscat2_sep_schannel --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/alexscat2_sep_schannel_extra
-
-#apython run_cifar100.py -a alexnet_n2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/alexnet_n2_extra_lr --lr 0.01;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l2_n2_extra_lr --lr 0.01;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 3 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l3_n2_extra_lr --lr 0.01;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 4 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l4_n2_extra_lr --lr 0.01
 
 
-#apython run_cifar100.py -a alexnet_n2 --schedule 81 122 206 --epochs 248 --checkpoint checkpoint/alexnet_n2_extra_lr --lr 0.01
 #apython run_cifar100.py --arch alexnet_n2 --checkpoint checkpoint/alexnet_n2; apython run_cifar100.py --arch alexscat_fnum_n2 --ascat_j 2 --ascat_l 2 --checkpoint checkpoint/j2l2_n2; apython run_cifar100.py --arch alexscat_fnum_n2 --ascat_j 2 --ascat_l 3 --checkpoint checkpoint/j2l3_n2; apython run_cifar100.py --arch alexscat_fnum_n2 --ascat_j 2 --ascat_l 4 --checkpoint checkpoint/j2l4_n2

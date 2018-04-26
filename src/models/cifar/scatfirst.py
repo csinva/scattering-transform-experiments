@@ -4,7 +4,7 @@ Without BN, the start learning rate should be 0.01
 '''
 import torch
 import torch.nn as nn
-from scatwave.scattering import Scattering
+from .scatwave.scattering import Scattering
 
 
 

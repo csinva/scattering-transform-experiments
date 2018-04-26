@@ -8,13 +8,13 @@ from .scatwave.scattering import Scattering
 
 
 
-__all__ = ['alexscat2first']
+__all__ = ['alexscat2_sep_schannel']
 
 
-class AlexScat2First(nn.Module):
+class AlexScat2_Sep_SChannel(nn.Module):
 
     def __init__(self, num_classes=10):
-        super(AlexScat2First, self).__init__()
+        super(AlexScat2_Sep_SChannel, self).__init__()
 
         self.J1 = 2
         self.N1 = 32
@@ -34,32 +34,32 @@ class AlexScat2First(nn.Module):
 
         self.J2 = 1
         self.N2 = 8
-        self.L2 = 1 
-        self.scat2 = Scattering(M=8,N=8,J=self.J2).cuda()
+        self.L2 = 2
+        self.scat2 = Scattering(M=self.N2,N=self.N2,J=self.J2, L=self.L2).cuda()
 
         self.nfscat2 = (1 + self.L2 * self.J2 + self.L2 * self.L2 * self.J2 * (self.J2 - 1) / 2)
         self.nspace2 = self.N2 / (2 ** self.J2)
         print(self.nfscat2*3)
 
         self.n_flayer1 = 64
-        self.n_flayer2 = 600
+        self.n_flayer2 = 192
+
 
         self.first_layer = nn.Sequential(
-            nn.Conv2d(3, self.n_flayer1 - self.nfscat1*3, kernel_size=11, stride=4, padding=5),
+            nn.Conv2d(1, (self.n_flayer1 - self.nfscat1*3) // 3, kernel_size=11, stride=4, padding=5),
             nn.ReLU(inplace=True)
             )
 
         self.second_layer = nn.Sequential(
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(self.n_flayer1, self.n_flayer2 - 64*9, kernel_size=5, padding=2),
+            nn.Conv2d(1, (self.n_flayer2 - self.nfscat2*self.nfscat1*3) // (self.n_flayer1 - self.nfscat1*3), kernel_size=5, padding=2),
             nn.ReLU(inplace=True),
             )
 
 
-
         self.features = nn.Sequential(
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(self.n_flayer2, 384, kernel_size=3, padding=1),
+            nn.Conv2d(self.n_flayer2 - 3, 384, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
             nn.Conv2d(384, 256, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
@@ -70,29 +70,27 @@ class AlexScat2First(nn.Module):
         self.classifier = nn.Linear(256, num_classes)
 
     def forward(self, x):
-        x1 = self.first_layer(x)
-        x2 = torch.autograd.Variable(self.scat1(x.data), requires_grad = True)
-        #print(x2.size())
+        first = [self.first_layer(x[:,i,:,:].unsqueeze(1)) for i in range(x.shape[1])]
+        x1 = torch.cat(first, 1)
+        second = [self.second_layer(x1[:,i,:,:].unsqueeze(1)) for i in range(x1.shape[1])]
+        x1 = torch.cat(second, 1)
+        x2 = torch.autograd.Variable(self.scat1(x.data), requires_grad = False)
         x2 = x2.view(x.size(0), self.nfscat1*3, self.nspace1, self.nspace1)
-        x = torch.cat([x1,x2], 1)
-
-        x1 = self.second_layer(x)
-        x2 = torch.autograd.Variable(self.scat2(x.data), requires_grad = True)
-        #print(x2.size())
+        x2 = torch.autograd.Variable(self.scat2(x2.data), requires_grad = False)
         x2 = x2.view(x.size(0), x2.size(1)*x2.size(2), self.nspace2, self.nspace2)
-        #print(x1.size())
-        #print(x2.size())
         x = torch.cat([x1,x2], 1)
-
         x = self.features(x)
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x
 
 
-def alexscat2first(**kwargs):
+def alexscat2_sep_schannel(**kwargs):
     """AlexNet model architecture from the
     `"One weird trick..." <https://arxiv.org/abs/1404.5997>`_ paper.
     """
-    model = AlexScat2First(**kwargs)
+    model = AlexScat2_Sep_SChannel(**kwargs)
     return model
+
+
+#apython -i run_cifar100.py -a alexscat2_sep --schedule 81 122 164 --epochs 206 --checkpoint checkpoint/alexscat2_sep_extra
