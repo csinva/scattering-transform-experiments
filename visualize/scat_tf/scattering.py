@@ -71,7 +71,7 @@ def periodize(x, k):
     out = tf.concat([y0, y1], axis=-1)
     return out
 
-
+# absolute value
 def modulus(x):
 
     input_shape = x.get_shape().as_list()
@@ -103,7 +103,7 @@ class Scattering(object):
         # Create the filters
         filters = filters_bank(self.M_padded, self.N_padded, J, L)
 
-        self.Psi = filters['psi']
+        self.Psi = filters['psi'] # length = J*L
         self.Phi = [filters['phi'][j] for j in range(J)]
 
     def _prepare_padding_size(self, s):
@@ -142,7 +142,7 @@ class Scattering(object):
 
         J = self.J
         phi = self.Phi
-        psi = self.Psi
+        psi = self.Psi # length = J * L
         n = 0
 
         pad = self._pad
@@ -155,10 +155,10 @@ class Scattering(object):
         U_1_c = periodize(cdgmm(U_0_c, phi[0]), 2**J)
         U_J_r = compute_fft(U_1_c, 'C2R')
 
-        S.append(unpad(U_J_r))
+        S.append(unpad(U_J_r)) # append 1
         n = n + 1
 
-        for n1 in range(len(psi)):
+        for n1 in range(len(psi)): # J*L iterations
             j1 = psi[n1]['j']
             U_1_c = cdgmm(U_0_c, psi[n1][0])
             if j1 > 0:
@@ -169,7 +169,7 @@ class Scattering(object):
             # Second low pass filter
             U_2_c = periodize(cdgmm(U_1_c, phi[j1]), k=2**(J - j1))
             U_J_r = compute_fft(U_2_c, 'C2R')
-            S.append(unpad(U_J_r))
+            S.append(unpad(U_J_r)) # append basic
             n = n + 1
 
             for n2 in range(len(psi)):
@@ -183,7 +183,7 @@ class Scattering(object):
                     U_2_c = periodize(cdgmm(U_2_c, phi[j2]), k=2 ** (J - j2))
                     U_J_r = compute_fft(U_2_c, 'C2R')
 
-                    S.append(unpad(U_J_r))
+                    S.append(unpad(U_J_r)) # append extra
                     n = n + 1
 
         if self.check:
