@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import os
+import argparse
 import matplotlib.pyplot as plt
 import torch
 from torch.optim import SGD
@@ -14,6 +15,17 @@ import torch.nn as nn
 import torchvision.datasets as datasets
 import copy
 from utils import AverageMeter, accuracy
+
+
+from scatwave.filters_bank import filters_bank
+from scatwave.differentiable import scattering, cast
+import new
+
+parser = argparse.ArgumentParser(description='PyTorch CIFAR10/100 Importance Plots')
+parser.add_argument('-c', '--checkpoint', default='checkpoint', type=str, metavar='PATH',
+                    help='path to load checkpoint (default: checkpoint)')
+parser.add_argument('-l', default=2, type=int)
+args = parser.parse_args()
 
 
 def test(testloader, model, criterion, epoch, use_cuda):
@@ -61,7 +73,7 @@ def make_image():
     images = []
     for _ in range(3):
         image = np.random.randn(11,11)/5+0.5
-        image = np.pad(image, ((11, 11), (11, 11)), 'constant')
+        image = np.pad(image, ((10, 11), (11, 10)), 'constant')
         images.append(image)
     image = np.stack(images)
     image = image.transpose(0,2,1)
@@ -70,8 +82,8 @@ def make_image():
     torch_image = torch_image.unsqueeze_(0)
     return torch_image
 
-#im_as_var = Variable(torch_image.cuda(), requires_grad=True)
 
+#im_as_var = Variable(torch_image.cuda(), requires_grad=True)
 
 #This code prepares the data to evaluate the test accuracy. This was taken directly from the training code.
 transform_test = transforms.Compose([
@@ -90,17 +102,20 @@ epoch = 164
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 
 
-folderName = raw_input("Foldername: ")
-l = int(raw_input("l: "))
-best_ascat = torch.load("../pytorch-classification/checkpoint/"+folderName+"/model_best.pth.tar")
-model = models.__dict__["alexscat_fnum"](num_classes=100,n=32,j=2,l=l)
+#folderName = raw_input("Foldername: ")
+#l = int(raw_input("l: "))
+best_ascat = torch.load(args.checkpoint+"/model_best.pth.tar")
+model = models.__dict__["alexscat_fnum_n2"](num_classes=100,n=32,j=2,l=args.l)
 model = torch.nn.DataParallel(model).cuda()
 model.load_state_dict(best_ascat['state_dict'])
-conv1_weights = best_ascat['state_dict']['module.first_layer.0.weight'].cpu().numpy()
-tensor = np.swapaxes(conv1_weights,1,3)
+
+
+if args.l < 4:
+    conv1_weights = best_ascat['state_dict']['module.first_layer.0.weight'].cpu().numpy()
+    tensor = np.swapaxes(conv1_weights,1,3)
 
 #This is another copy of the same model so we can alter it.
-model2 = models.__dict__["alexscat_fnum"](num_classes=100,n=32,j=2,l=l)
+model2 = models.__dict__["alexscat_fnum_n2"](num_classes=100,n=32,j=2,l=args.l)
 model2 = torch.nn.DataParallel(model2).cuda()
 
 
@@ -118,27 +133,44 @@ for f_num in range(model.module.n_flayer - model.module.nfscat*3):
 	losses, top1 = test(testloader, model2, criterion, epoch, True)
 	scores.append(top1)
 
+print("switching to scat filter importance")
+
+model3 = models.__dict__["alexscat_fnum_n2"](num_classes=100,n=32,j=2,l=args.l)
+for s_num in range(model.module.nfscat*3):
+    model3.remove=s_num
+    model4 = torch.nn.DataParallel(model3).cuda()
+    model4.load_state_dict(best_ascat['state_dict'])
+    losses, top1 = test(testloader, model4, criterion, epoch, True)
+    scores.append(top1)
+
+
 
 scores = np.array(scores)
 torch_image = make_image()
-
+#scat_f = filters_bank(32,32,2,l)
+psi, phi = cast(model.module.scat.Psi, model.module.scat.Phi, torch.cuda.FloatTensor)
+nonscat = model.module.n_flayer - model.module.nfscat*3
+num_cols = 8
+num_rows = 1 + len(scores)//num_cols
 #if not os.path.exists('../importance/j2l3'):
 #    os.makedirs('../importance/j2l3')
-
+#import pdb
+#pdb.set_trace()
 #This code goes through and plots each filter.
 num_cols = 8
 num_rows = 1 + len(scores)//num_cols
 fig = plt.figure(figsize=(num_cols, num_rows))
 for importance, f_num in enumerate(np.argsort(scores)):
-    ax1 = fig.add_subplot(num_rows, num_cols, importance + 1)
-    minned = tensor[f_num] - np.min(tensor[f_num])
-    ax1.imshow(minned/np.max(minned))
-    ax1.axis('off')
-    ax1.set_xticklabels([])
-    ax1.set_yticklabels([])
-    ax1.set_title(str(allFilters - scores[f_num]))
+    if(f_num < nonscat):
+        ax1 = fig.add_subplot(num_rows, num_cols, importance + 1)
+        minned = tensor[f_num] - np.min(tensor[f_num])
+        ax1.imshow(minned/np.max(minned))
+        ax1.axis('off')
+        ax1.set_xticklabels([])
+        ax1.set_yticklabels([])
+        ax1.set_title(str(allFilters - scores[f_num]))
 plt.subplots_adjust(wspace=1.0, hspace=0.1)
-plt.savefig(folderName+"_filters.png")
+plt.savefig(args.checkpoint+"/importance_filters.png")
 
 plt.close()
 
@@ -153,11 +185,16 @@ for importance, f_num in enumerate(np.argsort(scores)):
         optimizer.zero_grad()
 
         x = im_as_var
-        x = model.module.first_layer[0](x)
-        #y = model.module.features[0](im_as_var)
-        #x = x.view(x.size(0), model.module.nfscat*3, model.module.nspace, model.module.nspace)
-        loss = -1.0* x[0, f_num, 4, 4]
 
+        if(f_num < nonscat):
+            x = model.module.first_layer[0](x)
+            #y = model.module.features[0](im_as_var)
+            #x = x.view(x.size(0), model.module.nfscat*3, model.module.nspace, model.module.nspace)
+            loss = -1.0* x[0, f_num, 4, 4]
+        else:
+            x = scattering(x, psi, phi, 2, args.l)
+            x = x.view(x.size(0), model.module.nfscat*3, model.module.nspace, model.module.nspace)
+            loss = -1.0* x[0, f_num - nonscat, 4, 4]
         #https://towardsdatascience.com/pytorch-implementation-of-perceptual-losses-for-real-time-style-transfer-8d608e2e9902
         #reg_loss = REGULARIZATION * (
         #torch.sum(torch.abs(im_as_var[:, :, :-1] - im_as_var[ :, :, 1:])) + 
@@ -180,9 +217,12 @@ for importance, f_num in enumerate(np.argsort(scores)):
     ax1.axis('off')
     ax1.set_xticklabels([])
     ax1.set_yticklabels([])
-    ax1.set_title(str(allFilters - scores[f_num]))
+    if(f_num < nonscat):
+        ax1.set_title(str(allFilters - scores[f_num]))
+    else:
+        ax1.set_title(str(allFilters - scores[f_num]) + " (s)")
 plt.subplots_adjust(wspace=1.0, hspace=0.1)
-plt.savefig(folderName+"max_act.png")
+plt.savefig(args.checkpoint+"/max_act.png")
 
 plt.close()
 
