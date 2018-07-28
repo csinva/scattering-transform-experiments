@@ -14,3 +14,4 @@ pytorch-classification/data/cifar_100
 **.gz
 **.pyc
 **.npy
+**.zip
