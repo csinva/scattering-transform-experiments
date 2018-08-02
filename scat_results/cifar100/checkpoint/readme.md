@@ -1,2 +1,0 @@
-- keeping total number of filters in layer 1 the same
-- alexnet max_act missing
