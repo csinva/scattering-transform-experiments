@@ -5,6 +5,8 @@ import torch
 from torch.optim import SGD
 from torchvision import models
 
+import argparse
+
 import models.cifar as models
 
 import numpy as np 
@@ -22,6 +24,10 @@ from utils import AverageMeter, accuracy
 
 #image = cv2.randn(np.zeros((32,32,3)), (0), (0.5,0.5,0.5))
 #image = np.zeros((32,32,3)) + 0.5
+parser = argparse.ArgumentParser(description='PyTorch CIFAR10/100 Importance Plots For Alexnet')
+parser.add_argument('-c', '--checkpoint', default='checkpoint', type=str, metavar='PATH',
+                    help='path to load checkpoint (default: checkpoint)')
+args = parser.parse_args()
 
 
 def test(testloader, model, criterion, epoch, use_cuda):
@@ -93,7 +99,7 @@ epoch = 164
 
 
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
-best_alexnet = torch.load("../pytorch-classification/checkpoint/alexnet/model_best.pth.tar")
+best_alexnet = torch.load(args.checkpoint+"/model_best.pth.tar")
 model = models.__dict__["alexnet"](num_classes=100)
 model = torch.nn.DataParallel(model).cuda()
 model.load_state_dict(best_alexnet['state_dict'])
@@ -133,7 +139,7 @@ for importance, f_num in enumerate(np.argsort(scores)):
     ax1.set_yticklabels([])
     ax1.set_title(str(allFilters - scores[f_num]))
 plt.subplots_adjust(wspace=1.0, hspace=0.1)
-plt.savefig("filters_alexnet.png")
+plt.savefig(args.checkpoint+"/importance_filters.png")
 plt.close()
 fig = plt.figure(figsize=(num_cols, num_rows))
 REGULARIZATION = 0.0001
@@ -171,6 +177,6 @@ for importance, f_num in enumerate(np.argsort(scores)):
     ax1.set_yticklabels([])
     ax1.set_title(str(allFilters - scores[f_num]))
 plt.subplots_adjust(wspace=1.0, hspace=0.1)
-plt.savefig("deep_dream_alexnet.png")
+plt.savefig(args.checkpoint+"/max_act.png")
 
 plt.close()

@@ -3,7 +3,7 @@ Training script for CIFAR-10/100
 Copyright (c) Wei YANG, 2017
 '''
 from __future__ import print_function
-
+import numpy as np
 import argparse
 import os
 import shutil
@@ -19,6 +19,8 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import models.cifar as models
+from torch.utils.data.sampler import SubsetRandomSampler
+
 
 from utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
 
@@ -32,6 +34,8 @@ parser = argparse.ArgumentParser(description='PyTorch CIFAR10/100 Training')
 parser.add_argument('-d', '--dataset', default='cifar100', type=str)
 parser.add_argument('-j', '--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
+
+parser.add_argument('--holdout', default=3000, type=int, help="number of testset samples to hold out")
 # Optimization options
 parser.add_argument('--epochs', default=164, type=int, metavar='N',
                     help='number of total epochs to run')
@@ -140,7 +144,20 @@ def main():
     trainloader = data.DataLoader(trainset, batch_size=args.train_batch, shuffle=True, num_workers=args.workers)
 
     testset = dataloader(root='./data', train=False, download=False, transform=transform_test)
-    testloader = data.DataLoader(testset, batch_size=args.test_batch, shuffle=False, num_workers=args.workers)
+
+    num_test = len(testset)
+    indices = list(range(num_test))
+    split = int(np.floor(args.holdout))
+
+    np.random.seed(10)
+    np.random.shuffle(indices)
+
+    holdout_idx, test_idx = indices[split:], indices[:split]
+    test_sampler = SubsetRandomSampler(test_idx)
+    holdout_sampler = SubsetRandomSampler(holdout_idx)
+
+
+    testloader = data.DataLoader(testset, sampler=test_sampler, batch_size=args.test_batch, shuffle=False, num_workers=args.workers)
 
     # Model   
     print("==> creating model '{}'".format(args.arch))

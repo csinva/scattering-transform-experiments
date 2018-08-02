@@ -55,12 +55,14 @@ class AlexScat_FNum_n2(nn.Module):
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
         self.classifier = nn.Linear(384, num_classes)
+        self.remove = None
 
     def forward(self, x):
 
         x2 = torch.autograd.Variable(self.scat(x.data), requires_grad = False)
         x2 = x2.view(x.size(0), self.nfscat*3, self.nspace, self.nspace)
-
+        if self.remove is not None:
+            x2[:,self.remove,:,:] = 0
         if self.nfscat*3 < self.n_flayer:
             x1 = self.first_layer(x)
             x = torch.cat([x1,x2], 1)
@@ -84,8 +86,16 @@ def alexscat_fnum_n2(**kwargs):
 
 #apython run_cifar100.py -a alexscat2_sep --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/alexscat2_sep_extra;apython run_cifar100.py -a alexnet_n2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/alexnet_n2_extra;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l2_n2_extra;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 3 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l3_n2_extra;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 4 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l4_n2_extra;apython run_cifar100.py -a alexscat2_sep_schannel --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/alexscat2_sep_schannel_extra
 
-#apython run_cifar100.py -a alexnet_n2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/alexnet_n2_extra_lr --lr 0.01;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l2_n2_extra_lr --lr 0.01;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 3 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l3_n2_extra_lr --lr 0.01;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 4 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l4_n2_extra_lr --lr 0.01
+#apython run_cifar100.py -a alexnet_n2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/alexnet_n2_extra_lr_0.005 --lr 0.005;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l2_n2_extra_lr_0.005 --lr 0.005;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 3 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l3_n2_extra_lr_0.005 --lr 0.005;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 4 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l4_n2_extra_lr_0.005 --lr 0.005;
+#\ apython run_cifar100.py -a alexnet_n2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/alexnet_n2_extra_lr_0.01 --lr 0.01;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l2_n2_extra_lr_0.01 --lr 0.01;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 3 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l3_n2_extra_lr_0.01 --lr 0.01;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 4 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l4_n2_extra_lr_0.01 --lr 0.01; apython run_cifar100.py -a alexnet_n2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/alexnet_n2_extra_lr_0.05 --lr 0.05;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l2_n2_extra_lr_0.05 --lr 0.05;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 3 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l3_n2_extra_lr_0.05 --lr 0.05;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 4 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l4_n2_extra_lr_0.05 --lr 0.05; apython run_cifar100.py -a alexnet_n2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/alexnet_n2_extra_lr_0.1 --lr 0.1;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 2 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l2_n2_extra_lr_0.1 --lr 0.1;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 3 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l3_n2_extra_lr_0.1 --lr 0.1;apython run_cifar100.py -a alexscat_fnum_n2 --ascat_j 2 --ascat_l 4 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l4_n2_extra_lr_0.1 --lr 0.1;
 
 
 #apython run_cifar100.py -a alexnet_n2 --schedule 81 122 206 --epochs 248 --checkpoint checkpoint/alexnet_n2_extra_lr --lr 0.01
 #apython run_cifar100.py --arch alexnet_n2 --checkpoint checkpoint/alexnet_n2; apython run_cifar100.py --arch alexscat_fnum_n2 --ascat_j 2 --ascat_l 2 --checkpoint checkpoint/j2l2_n2; apython run_cifar100.py --arch alexscat_fnum_n2 --ascat_j 2 --ascat_l 3 --checkpoint checkpoint/j2l3_n2; apython run_cifar100.py --arch alexscat_fnum_n2 --ascat_j 2 --ascat_l 4 --checkpoint checkpoint/j2l4_n2
+
+
+
+
+#apython  importance_plots.py --checkpoint checkpoint/j2l2_n2_extra_lr_0.005 -l 2;
+#apython  importance_plots.py --checkpoint checkpoint/j2l2_n2_extra_lr_0.01 -l 2; apython  importance_plots.py --checkpoint checkpoint/j2l2_n2_extra_lr_0.05 -l 2; apython  importance_plots.py --checkpoint checkpoint/j2l2_n2_extra_lr_0.1 -l 2; apython  importance_plots.py --checkpoint checkpoint/j2l3_n2_extra_lr_0.005 -l 3; apython  importance_plots.py --checkpoint checkpoint/j2l3_n2_extra_lr_0.01 -l 3; apython  importance_plots.py --checkpoint checkpoint/j2l3_n2_extra_lr_0.05 -l 3; apython  importance_plots.py --checkpoint checkpoint/j2l3_n2_extra_lr_0.1 -l 3;
+#apython  importance_plots.py --checkpoint checkpoint/j2l4_n2_extra_lr_0.005 -l 4; apython  importance_plots.py --checkpoint checkpoint/j2l4_n2_extra_lr_0.01 -l 4; apython  importance_plots.py --checkpoint checkpoint/j2l4_n2_extra_lr_0.05 -l 4; apython  importance_plots.py --checkpoint checkpoint/j2l4_n2_extra_lr_0.1 -l 4;
