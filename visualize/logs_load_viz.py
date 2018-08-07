@@ -23,7 +23,7 @@ def load_results(path_to_results):
             x = np.loadtxt(oj(path_to_results, dirname, 'log.txt'), skiprows=1)
             d['train'] = x[:, -2]
             d['val'] = x[:, -1]
-            filter_name = [x for x in os.listdir(oj(path_to_results, dirname)) if 'filters' in x]
+            filter_name = [x for x in os.listdir(oj(path_to_results, dirname)) if 'max_act' in x]
             if len(filter_name) == 1:
                 d['filters'] = imageio.imread(oj(path_to_results, dirname, filter_name[0]))
             results[dirname] = d
