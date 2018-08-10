@@ -61,6 +61,10 @@ parser.add_argument('-c', '--checkpoint', default='checkpoint', type=str, metava
                     help='path to save checkpoint (default: checkpoint)')
 parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
+parser.add_argument('--copy-path', default='', type=str, metavar='PATH',
+                    help='path to model to copy filters from')
+parser.add_argument('--copy-num', default=0, type=int, metavar='N',
+                    help='number of filters to copy from loaded model')
 # Architecture
 parser.add_argument('--arch', '-a', metavar='ARCH', default='alexscat_fnum',
                     choices=model_names,
@@ -194,6 +198,16 @@ def main():
             model = models.__dict__[args.arch](num_classes=num_classes, j = args.ascat_j, l = args.ascat_l)
         else:
             model = models.__dict__[args.arch](num_classes = num_classes)
+
+    if(args.copy_num != 0):
+        from importance_helpers import get_alexnet_important_filts
+        filts = get_alexnet_important_filts(args.copy_path, args.copy_num)
+        sd = model.state_dict()
+        if args.copy_num != -1:
+            sd['features.0.weight'][:args.copy_num] = filts
+        else:
+            sd['features.0.weight'][:] = filts
+
 
     model = torch.nn.DataParallel(model).cuda()
     cudnn.benchmark = True

@@ -102,8 +102,6 @@ epoch = 164
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 
 
-#folderName = raw_input("Foldername: ")
-#l = int(raw_input("l: "))
 best_ascat = torch.load(args.checkpoint+"/model_best.pth.tar")
 model = models.__dict__["alexscat_fnum_n2"](num_classes=100,n=32,j=2,l=args.l)
 model = torch.nn.DataParallel(model).cuda()

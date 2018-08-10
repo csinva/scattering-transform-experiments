@@ -60,8 +60,7 @@ def make_image():
     '''
     images = []
     for _ in range(3):
-        image = np.random.randn(11,11)/5+0.5
-        image = np.pad(image, ((11, 11), (11, 11)), 'constant')
+        image = np.random.randn(32,32)/5+0.5
         images.append(image)
     image = np.stack(images)
     image = image.transpose(0,2,1)
@@ -93,14 +92,15 @@ os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 folderName = raw_input("Foldername: ")
 l = int(raw_input("l: "))
 best_ascat = torch.load("checkpoint/"+folderName+"/model_best.pth.tar")
-model = models.__dict__["alexscat2_sep"](num_classes=100)
+model = models.__dict__["alexscat2_sep_schannel"](num_classes=100)
 model = torch.nn.DataParallel(model).cuda()
 model.load_state_dict(best_ascat['state_dict'])
-conv1_weights = best_ascat['state_dict']['module.first_two_layers.0.weight'].cpu().numpy()
+#conv1_weights = best_ascat['state_dict']['module.first_two_layers.0.weight'].cpu().numpy()
+conv1_weights = best_ascat['state_dict']['module.second_layer.1.weight'].cpu().numpy()
 tensor = np.swapaxes(conv1_weights,1,3)
 
 #This is another copy of the same model so we can alter it.
-model2 = models.__dict__["alexscat2_sep"](num_classes=100)
+model2 = models.__dict__["alexscat2_sep_schannel"](num_classes=100)
 model2 = torch.nn.DataParallel(model2).cuda()
 
 
@@ -111,9 +111,10 @@ allFilters = top1
 
 #This code just gets the importance scores of each filter
 scores = []
-for f_num in range(model.module.n_flayer1 - model.module.nfscat1*3):
+#for f_num in range((model.module.n_flayer1 - model.module.nfscat1*3)):
+for f_num in range((model.module.n_flayer2 - model.module.nfscat2*model.module.nfscat1*3) // (model.module.n_flayer1 - model.module.nfscat1*3)):
 	best_ascat2 = copy.deepcopy(best_ascat['state_dict'])	
-	best_ascat2['module.first_two_layers.0.weight'][f_num] = 0
+	best_ascat2['module.second_layer.1.weight'][f_num] = 0
 	model2.load_state_dict(best_ascat2)
 	losses, top1 = test(testloader, model2, criterion, epoch, True)
 	scores.append(top1)
@@ -132,13 +133,13 @@ fig = plt.figure(figsize=(num_cols, num_rows))
 for importance, f_num in enumerate(np.argsort(scores)):
     ax1 = fig.add_subplot(num_rows, num_cols, importance + 1)
     minned = tensor[f_num] - np.min(tensor[f_num])
-    ax1.imshow(minned/np.max(minned))
+    ax1.imshow((minned/np.max(minned))[:,:,0])
     ax1.axis('off')
     ax1.set_xticklabels([])
     ax1.set_yticklabels([])
     ax1.set_title(str(allFilters - scores[f_num]))
 plt.subplots_adjust(wspace=1.0, hspace=0.1)
-plt.savefig(folderName+"_filters_l1.png")
+plt.savefig(folderName+"_filters_l2.png")
 
 plt.close()
 
@@ -153,14 +154,18 @@ for importance, f_num in enumerate(np.argsort(scores)):
         optimizer.zero_grad()
 
         x = im_as_var
-        x = model.module.first_two_layers[0](x)
+        first = [model.module.first_layer(x[:,i,:,:].unsqueeze(1)) for i in range(x.shape[1])]
+        x1 = torch.cat(first, 1)
+        second = [model.module.second_layer[1](model.module.second_layer[0](x1[:,i,:,:].unsqueeze(1))) for i in range(x1.shape[1])]
+        x = torch.cat(second, 1)
+        #x = model.module.first_two_layers[0](x)
         #x = model.module.first_two_layers[1](x)
         #x = model.module.first_two_layers[2](x)
         #x = model.module.first_two_layers[3](x)
 
         #y = model.module.features[0](im_as_var)
         #x = x.view(x.size(0), model.module.nfscat*3, model.module.nspace, model.module.nspace)
-        loss = -1.0* x[0, f_num, 4, 4]
+        loss = -1.0* x[0, f_num, 1, 1]
 
         #https://towardsdatascience.com/pytorch-implementation-of-perceptual-losses-for-real-time-style-transfer-8d608e2e9902
         #reg_loss = REGULARIZATION * (
@@ -177,7 +182,7 @@ for importance, f_num in enumerate(np.argsort(scores)):
         optimizer.step()
 
     recreated_im = copy.copy(im_as_var.data.cpu().numpy()[0]).transpose(2,1,0)
-    recreated_im = recreated_im[11:22,11:22,:]
+    #recreated_im = recreated_im[11:22,11:22,:]
     minned = recreated_im - np.min(recreated_im)
     ax1 = fig.add_subplot(num_rows, num_cols, importance + 1)
     ax1.imshow(minned/np.max(minned))
@@ -186,7 +191,7 @@ for importance, f_num in enumerate(np.argsort(scores)):
     ax1.set_yticklabels([])
     ax1.set_title(str(allFilters - scores[f_num]))
 plt.subplots_adjust(wspace=1.0, hspace=0.1)
-plt.savefig(folderName+"max_act_l1.png")
+plt.savefig(folderName+"max_act_l2.png")
 
 plt.close()
 
