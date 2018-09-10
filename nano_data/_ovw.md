@@ -10,5 +10,8 @@
 - **star polymer folder**: star polymer system corresponding to lillians paper "Controlled Molecular Assembly via Dynamic Confinement of Solvent"
   - data all have at least 4 duplicates
   - for other data, you can give us request, and I can easily do new experiment to accommodate you needs.
-- **mixed sam folder**: binary system example that we have talked during skype meeting. 
-  - we can generate more data in one week if you tell us what kind of data you need.
+  - **questions: does color scale correspond to height for these images?**
+    - please always use .TIF
+    - put y-scale into excel file?
+- **mixed sam folder**: binary system example that we have talked during skype meeting
+  - we can generate more data in one week if you tell us what kind of data you need
