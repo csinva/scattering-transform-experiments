@@ -1,0 +1,14 @@
+- preprocessing
+  - for the images, the color scale (grey) or z-scale shown in the right side of the image is directly linear to the height for all AFM images. (explained in the following figures), the
+    - image sizes (x,y) are 500 × 500 nm$^2$ 
+    - image conditions are 512 lines/frame with 512 points per line. 
+  - raw images are in .ibw format (don't have these here - link in Lillian's email)
+  - processed images are in .TIF format, but need cropping
+  - afm_software
+    - software for preprocessing raw afm images from microscope (windows-specific)
+    - uses Igor Pro (from Asylum software - link in Lillian's email)
+- **star polymer folder**: star polymer system corresponding to lillians paper "Controlled Molecular Assembly via Dynamic Confinement of Solvent"
+  - data all have at least 4 duplicates
+  - for other data, you can give us request, and I can easily do new experiment to accommodate you needs.
+- **mixed sam folder**: binary system example that we have talked during skype meeting. 
+  - we can generate more data in one week if you tell us what kind of data you need.
