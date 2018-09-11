@@ -21,8 +21,9 @@ class Star_dset(Dataset):
 
     def read_and_crop_tif(self, fname):
         im = Image.open(oj(fname + '.TIF'))
-        imarray = np.array(im)
-        im_downsample = imresize(imarray, size=(imarray.shape[0]//8, imarray.shape[1]//8)) # downsample by 8
+        imarray = np.array(im)[:, :, 0] # convert to grayscale
+        # im_downsample = imresize(imarray, size=(imarray.shape[0]//8, imarray.shape[1]//8)) # downsample by 8
+        im_downsample = imresize(imarray, size=(764, 915)) # downsample by 8
         im_cropped = im_downsample[20: 695, 102: 777]
         return im_cropped
     
@@ -44,7 +45,7 @@ class Mixed_sam_dset(Dataset):
 
     def read_and_crop_tif(self, fname):
         im = Image.open(oj(fname))
-        imarray = np.array(im)
+        imarray = np.array(im)[:, :, 0] # convert to grayscale
         im_downsample = imresize(imarray, size=(imarray.shape[0]//8, imarray.shape[1]//8)) # downsample by 8
         im_cropped = im_downsample[15: 338, 73: 396]
         return im_cropped
