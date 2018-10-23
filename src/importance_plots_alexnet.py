@@ -27,6 +27,8 @@ from utils import AverageMeter, accuracy
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10/100 Importance Plots For Alexnet')
 parser.add_argument('-c', '--checkpoint', default='checkpoint', type=str, metavar='PATH',
                     help='path to load checkpoint (default: checkpoint)')
+parser.add_argument('--arch', '-a', metavar='ARCH', default='alexnet_n2')
+
 args = parser.parse_args()
 
 
@@ -82,11 +84,6 @@ def make_image():
     return torch_image
 
 
-#im_as_var = Variable(torch_image.cuda(), requires_grad=True)
-
-
-
-
 transform_test = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
@@ -100,14 +97,14 @@ epoch = 164
 
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 best_alexnet = torch.load(args.checkpoint+"/model_best.pth.tar")
-model = models.__dict__["alexnet"](num_classes=100)
+model = models.__dict__[args.arch](num_classes=100)
 model = torch.nn.DataParallel(model).cuda()
 model.load_state_dict(best_alexnet['state_dict'])
 conv1_weights = best_alexnet['state_dict']['module.features.0.weight'].cpu().numpy()
 tensor = np.swapaxes(conv1_weights,1,3)
 
 
-model2 = models.__dict__["alexnet"](num_classes=100)
+model2 = models.__dict__[args.arch](num_classes=100)
 model2 = torch.nn.DataParallel(model2).cuda()
 model2.load_state_dict(best_alexnet['state_dict'])
 losses, top1 = test(testloader, model2, criterion, epoch, True)
@@ -117,11 +114,11 @@ allFilters = top1
 
 scores = []
 for f_num in range(64):
-	best_alexnet2 = copy.deepcopy(best_alexnet['state_dict'])	
-	best_alexnet2['module.features.0.weight'][f_num] = 0
-	model2.load_state_dict(best_alexnet2)
-	losses, top1 = test(testloader, model2, criterion, epoch, True)
-	scores.append(top1)
+    best_alexnet2 = copy.deepcopy(best_alexnet['state_dict'])
+    best_alexnet2['module.features.0.weight'][f_num] = 0
+    model2.load_state_dict(best_alexnet2)
+    losses, top1 = test(testloader, model2, criterion, epoch, True)
+    scores.append(top1)
 
 scores = np.array(scores)
 torch_image = make_image()

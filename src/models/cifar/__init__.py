@@ -81,4 +81,10 @@ from .alexscat_fnum_n2 import *
 from .alexnet_n2 import *
 from .alexscat2_sep import *
 from .alexscat2_sep_schannel import *
+from .alexnet_n2_batchnorm import *
+from .alexscat_fnum_n2_bnorm import *
+from .alexnet_n2_copy2 import *
+from .alexscat_fnum_n2_1x1 import *
+from .alexscat_fnum_n2_res import *
+
 #from .alexscat_fnum_schannel.py import *

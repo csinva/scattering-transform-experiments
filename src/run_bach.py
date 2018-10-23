@@ -18,11 +18,57 @@ import torch.optim as optim
 import torch.utils.data as data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
+from torch.utils.data import Dataset, DataLoader
 import models.cifar as models
 from torch.utils.data.sampler import SubsetRandomSampler
 
 
 from utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
+
+class BachDataset(Dataset):
+    """Bach dataset."""
+
+    def __init__(self, root, transform=None, train=True):
+        """
+        Args:
+            csv_file (string): Path to the csv file with annotations.
+            root_dir (string): Directory with all the images.
+            transform (callable, optional): Optional transform to be applied
+                on a sample.
+        """
+        self.listdir = os.listdir(root)
+        self.root_dir = root
+        self.classes = ['b','is','iv','n']
+        self.train = train
+        if train:
+            self.im_per_class = 0.9 * len(self.listdir)/len(self.classes)
+        else:
+            self.im_per_class = 0.1 * len(self.listdir)/len(self.classes)
+
+    def __len__(self):
+        if self.train:
+            return len(self.listdir) * 0.9
+        else:
+            return len(self.listdir) * 0.1
+
+    def __getitem__(self, idx):
+
+        im_class = int(idx/self.im_per_class)
+        if self.train:
+            im_id = idx%self.im_per_class + 1
+        else:
+            im_id = idx%self.im_per_class + 91
+        fname = self.classes[im_class] + format(im_id,'03d') + '.tiff'
+
+        img_name = os.path.join(self.root_dir,
+                                fname)
+        image = io.imread(img_name)
+        sample = (image, im_class)
+
+        if self.transform:
+            sample = self.transform(sample)
+
+        return sample
 
 
 model_names = sorted(name for name in models.__dict__
@@ -107,7 +153,7 @@ use_cuda = torch.cuda.is_available()
 if args.manualSeed is -1:
     args.manualSeed = random.randint(1, 10000)
 
-    
+
 random.seed(args.manualSeed)
 torch.manual_seed(args.manualSeed)
 if use_cuda:
@@ -127,28 +173,26 @@ def main():
     # Data
     print('==> Preparing dataset %s' % args.dataset)
     transform_train = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
+        transforms.Resize(224),
+        #transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        transforms.ToTensor()
+        #transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
 
     transform_test = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        transforms.Resize(224),
+        transforms.ToTensor()
+        #transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
-    if args.dataset == 'cifar10':
-        dataloader = datasets.CIFAR10
-        num_classes = 10
-    else:
-        dataloader = datasets.CIFAR100
-        num_classes = 100
 
+    dataloader = BachDataset
+    num_classes = 4
 
-    trainset = dataloader(root='./data', train=True, download=True, transform=transform_train)
+    trainset = dataloader(root='./data/bach/', train=True,transform=transform_train)
     trainloader = data.DataLoader(trainset, batch_size=args.train_batch, shuffle=True, num_workers=args.workers)
 
-    testset = dataloader(root='./data', train=False, download=False, transform=transform_test)
+    testset = dataloader(root='./data/bach/', train=False,transform=transform_test)
 
     num_test = len(testset)
     indices = list(range(num_test))
@@ -164,7 +208,7 @@ def main():
 
     testloader = data.DataLoader(testset, sampler=test_sampler, batch_size=args.test_batch, shuffle=False, num_workers=args.workers)
 
-    # Model   
+    # Model
     print("==> creating model '{}'".format(args.arch))
     if args.arch.startswith('resnext'):
         model = models.__dict__[args.arch](
@@ -181,7 +225,7 @@ def main():
                     growthRate=args.growthRate,
                     compressionRate=args.compressionRate,
                     dropRate=args.drop,
-                )        
+                )
     elif args.arch.startswith('wrn'):
         model = models.__dict__[args.arch](
                     num_classes=num_classes,
@@ -251,7 +295,7 @@ def main():
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
     # Resume
-    title = 'cifar-10-' + args.arch
+    title = 'bach-' + args.arch
     if args.resume:
         # Load checkpoint.
         print('==> Resuming from checkpoint..')

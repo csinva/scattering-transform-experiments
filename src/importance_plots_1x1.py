@@ -7,7 +7,7 @@ import torch
 from torch.optim import SGD
 from torchvision import models
 import models.cifar as models
-import numpy as np 
+import numpy as np
 from torch.autograd import Variable
 import torchvision.transforms as transforms
 import torch.utils.data as data
@@ -69,7 +69,7 @@ def test(testloader, model, criterion, epoch, use_cuda):
     return (losses.avg, top1.avg)
 
 
-def make_image(): 
+def make_image():
     '''
     Makes a noisy image and turns it into a torch array so we can later turn it into a variable and calculate gradients on it and apply them.
     '''
@@ -120,48 +120,40 @@ model2 = models.__dict__[args.arch](num_classes=100,n=32,j=2,l=args.l,extra_conv
 model2 = torch.nn.DataParallel(model2).cuda()
 
 
-best_ascat2 = copy.deepcopy(best_ascat['state_dict'])   
+best_ascat2 = copy.deepcopy(best_ascat['state_dict'])
 model2.load_state_dict(best_ascat2)
 losses, top1 = test(testloader, model2, criterion, epoch, True)
 allFilters = top1
 
 #This code just gets the importance scores of each filter
 scores = []
-for f_num in range(model.module.n_flayer - model.module.nfscat*3):
-	best_ascat2 = copy.deepcopy(best_ascat['state_dict'])	
-	best_ascat2['module.first_layer.0.weight'][f_num] = 0
-	model2.load_state_dict(best_ascat2)
-	losses, top1 = test(testloader, model2, criterion, epoch, True)
-	scores.append(top1)
 
-num_cols = 8
-num_rows = 1 + len(scores)//num_cols
-fig = plt.figure(figsize=(num_cols, num_rows))
-for importance, f_num in enumerate(np.argsort(np.array(scores))):
-    #if(f_num < nonscat):
-    ax1 = fig.add_subplot(num_rows, num_cols, importance + 1)
-    minned = tensor[f_num] - np.min(tensor[f_num])
-    ax1.imshow(minned/np.max(minned))
-    ax1.axis('off')
-    ax1.set_xticklabels([])
-    ax1.set_yticklabels([])
-    ax1.set_title(str(allFilters - scores[f_num]))
-plt.subplots_adjust(wspace=1.0, hspace=0.1)
-plt.savefig(args.checkpoint+"/importance_filters.png")
-
-plt.close()
-
-
-
-print("switching to scat filter importance")
-
-model3 = models.__dict__[args.arch](num_classes=100,n=32,j=2,l=args.l,extra_conv=args.extra_conv)
-for s_num in range(model.module.nfscat*3):
-    model3.remove=s_num
-    model4 = torch.nn.DataParallel(model3).cuda()
-    model4.load_state_dict(best_ascat['state_dict'])
-    losses, top1 = test(testloader, model4, criterion, epoch, True)
+for f_num in range(args.extra_conv):
+    best_ascat2 = copy.deepcopy(best_ascat['state_dict'])
+    best_ascat2['module.first_layer.0.weight'][f_num] = 0
+    model2.load_state_dict(best_ascat2)
+    losses, top1 = test(testloader, model2, criterion, epoch, True)
     scores.append(top1)
+
+
+
+
+print("switching to post scat importance")
+
+for f_num in range(model.module.n_flayer - args.extra_conv):
+    best_ascat2 = copy.deepcopy(best_ascat['state_dict'])
+    best_ascat2['module.post_scat.0.weight'][f_num] = 0
+    model2.load_state_dict(best_ascat2)
+    losses, top1 = test(testloader, model2, criterion, epoch, True)
+    scores.append(top1)
+
+#model3 = models.__dict__[args.arch](num_classes=100,n=32,j=2,l=args.l,extra_conv=args.extra_conv)
+#for s_num in range(model.module.nfscat*3):
+#    model3.remove=s_num
+#    model4 = torch.nn.DataParallel(model3).cuda()
+#    model4.load_state_dict(best_ascat['state_dict'])
+#    losses, top1 = test(testloader, model4, criterion, epoch, True)
+#    scores.append(top1)
 
 
 
@@ -169,7 +161,7 @@ scores = np.array(scores)
 torch_image = make_image()
 #scat_f = filters_bank(32,32,2,l)
 psi, phi = cast(model.module.scat.Psi, model.module.scat.Phi, torch.cuda.FloatTensor)
-nonscat = model.module.n_flayer - model.module.nfscat*3
+nonscat = args.extra_conv
 num_cols = 8
 num_rows = 1 + len(scores)//num_cols
 #if not os.path.exists('../importance/j2l3'):
@@ -177,6 +169,22 @@ num_rows = 1 + len(scores)//num_cols
 #import pdb
 #pdb.set_trace()
 #This code goes through and plots each filter.
+num_cols = 8
+num_rows = 1 + len(scores)//num_cols
+fig = plt.figure(figsize=(num_cols, num_rows))
+for importance, f_num in enumerate(np.argsort(scores)):
+    if(f_num < nonscat):
+        ax1 = fig.add_subplot(num_rows, num_cols, importance + 1)
+        minned = tensor[f_num] - np.min(tensor[f_num])
+        ax1.imshow(minned/np.max(minned))
+        ax1.axis('off')
+        ax1.set_xticklabels([])
+        ax1.set_yticklabels([])
+        ax1.set_title(str(allFilters - scores[f_num]))
+plt.subplots_adjust(wspace=1.0, hspace=0.1)
+plt.savefig(args.checkpoint+"/importance_filters.png")
+
+plt.close()
 
 #This code applies the maximal activation for each filter and then plots the resulting image.
 fig = plt.figure(figsize=(num_cols, num_rows))
@@ -198,10 +206,11 @@ for importance, f_num in enumerate(np.argsort(scores)):
         else:
             x = scattering(x, psi, phi, 2, args.l)
             x = x.view(x.size(0), model.module.nfscat*3, model.module.nspace, model.module.nspace)
+            x = model.module.post_scat[0](x)
             loss = -1.0* x[0, f_num - nonscat, 4, 4]
         #https://towardsdatascience.com/pytorch-implementation-of-perceptual-losses-for-real-time-style-transfer-8d608e2e9902
         #reg_loss = REGULARIZATION * (
-        #torch.sum(torch.abs(im_as_var[:, :, :-1] - im_as_var[ :, :, 1:])) + 
+        #torch.sum(torch.abs(im_as_var[:, :, :-1] - im_as_var[ :, :, 1:])) +
         #torch.sum(torch.abs(im_as_var[ :, :-1, :] - im_as_var[:, 1:, :]))
         #)
         reg_loss = 0
@@ -235,9 +244,3 @@ plt.close()
 	#minned = tensor[f_num] - np.min(tensor[f_num])
 	#fin = minned/np.max(minned)
 	#cv2.imwrite("../importance/j2l3/"+"i"+str(importance)+"a"+str(scores[f_num])+"f"+str(f_num)+"filter.jpg", fin*255)
-
-
-
-
-
-
