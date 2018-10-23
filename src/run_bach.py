@@ -9,7 +9,7 @@ import os
 import shutil
 import time
 import random
-
+from PIL import Image
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -40,6 +40,7 @@ class BachDataset(Dataset):
         self.root_dir = root
         self.classes = ['b','is','iv','n']
         self.train = train
+        self.transform = transform
         if train:
             self.im_per_class = 0.9 * len(self.listdir)/len(self.classes)
         else:
@@ -58,15 +59,16 @@ class BachDataset(Dataset):
             im_id = idx%self.im_per_class + 1
         else:
             im_id = idx%self.im_per_class + 91
-        fname = self.classes[im_class] + format(im_id,'03d') + '.tiff'
+        im_id = int(im_id)
+        fname = self.classes[im_class] + format(im_id,'03d') + '.tif'
 
         img_name = os.path.join(self.root_dir,
                                 fname)
-        image = io.imread(img_name)
-        sample = (image, im_class)
-
+        #image = io.imread(img_name)
+        image = Image.open(img_name)
         if self.transform:
-            sample = self.transform(sample)
+            image = self.transform(image)
+        sample = (image, im_class)
 
         return sample
 
@@ -173,7 +175,7 @@ def main():
     # Data
     print('==> Preparing dataset %s' % args.dataset)
     transform_train = transforms.Compose([
-        transforms.Resize(224),
+        transforms.Resize((224,224)),
         #transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor()
@@ -189,10 +191,10 @@ def main():
     dataloader = BachDataset
     num_classes = 4
 
-    trainset = dataloader(root='./data/bach/', train=True,transform=transform_train)
+    trainset = dataloader(root='/global/scratch/chrislu/bach/', train=True,transform=transform_train)
     trainloader = data.DataLoader(trainset, batch_size=args.train_batch, shuffle=True, num_workers=args.workers)
 
-    testset = dataloader(root='./data/bach/', train=False,transform=transform_test)
+    testset = dataloader(root='/global/scratch/chrislu/bach/', train=False,transform=transform_test)
 
     num_test = len(testset)
     indices = list(range(num_test))
@@ -242,7 +244,7 @@ def main():
         if "alexscat_fnum" in args.arch:
             model = models.__dict__[args.arch](num_classes=num_classes, j = args.ascat_j, l = args.ascat_l, extra_conv = args.extra_conv)
         else:
-            model = models.__dict__[args.arch](num_classes = num_classes)
+            model = models.__dict__[args.arch](num_classes = num_classes,n=224)
 
     if args.copy_num != 0 and 'alexnet_n2_copy2' in args.arch:
         best_alexnet = torch.load(args.copy_path+"/model_best.pth.tar")['state_dict']
@@ -360,6 +362,8 @@ def train(trainloader, model, criterion, optimizer, epoch, use_cuda):
     top5 = AverageMeter()
 
     for batch_idx, (inputs, targets) in enumerate(trainloader):
+        import pdb
+        pdb.set_trace()
         if use_cuda:
             inputs, targets = inputs.cuda(), targets.cuda(async=True)
         inputs, targets = torch.autograd.Variable(inputs), torch.autograd.Variable(targets)
