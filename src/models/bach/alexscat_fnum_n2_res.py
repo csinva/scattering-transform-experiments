@@ -34,6 +34,8 @@ class AlexScat_FNum_n2_res(nn.Module):
 
         self.n_flayer = self.nfscat*3 + self.extra_conv #NORMALLY 64 FOR NORMAL ALEXNET
 
+        self.bnorm = nn.BatchNorm2d(3)
+
         #if self.nfscat*3 < self.n_flayer:
         if self.extra_conv > 0:
             self.first_layer = nn.Sequential(
@@ -71,6 +73,7 @@ class AlexScat_FNum_n2_res(nn.Module):
         self.remove = None
 
     def forward(self, x):
+        x = self.bnorm(x)
         x2 = torch.autograd.Variable(self.scat(x.data), requires_grad = False)
         x2 = x2.view(x.size(0), self.nfscat*3, self.nspace, self.nspace)
         if self.remove is not None:
