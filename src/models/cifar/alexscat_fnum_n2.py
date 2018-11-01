@@ -146,3 +146,9 @@ def alexscat_fnum_n2(**kwargs):
 #apython run_cifar100.py -a alexscat_fnum_n2_res --ascat_j 2 --ascat_l 8 --schedule 81 122 164 206 --epochs 248 --checkpoint checkpoint/j2l8_n2_extra_lr_0.05_res --lr 0.05;
 #apython run_cifar100.py -a alexscat_fnum_n2_res --ascat_j 2 --ascat_l 8 --schedule 50 90 --epochs 124 --checkpoint checkpoint/j2l8_lin_lr_0.05_res --lr 0.05;
 #apython run_cifar100.py -a alexscat_fnum_n2_res --ascat_j 2 --ascat_l 8 --schedule 50 90 --epochs 124 --extra_conv 64 --checkpoint checkpoint/j2l8_lin_lr_0.05_res_2 --lr 0.05 --copy-path checkpoint/j2l8_lin_lr_0.05_res --copy-num -1; apython  importance_plots.py --checkpoint checkpoint/j2l8_lin_lr_0.05_res_2 -l 8 --extra_conv 64 --arch alexscat_fnum_n2_res;
+
+
+#python run_bach.py -a alexnet --epochs 164 --schedule 81 122 --gamma 0.1 --checkpoint checkpoint/bach_alexnet;
+#python run_bach.py -a alexscat_fnum_n2_res --ascat_j 2 --ascat_l 8 --extra_conv 64 --schedule 50 90 --epochs 124 --checkpoint checkpoint/bach_j2l8_lr_0.05_res --lr 0.05;
+#python run_bach.py -a alexscat_fnum_n2_res --ascat_j 2 --ascat_l 4 --extra_conv 64 --schedule 50 90 --epochs 124 --checkpoint checkpoint/bach_j2l4_lr_0.05_res --lr 0.05;
+
