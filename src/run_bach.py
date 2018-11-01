@@ -19,7 +19,7 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torch.utils.data import Dataset, DataLoader
-import models.cifar as models
+import models.bach as models
 from torch.utils.data.sampler import SubsetRandomSampler
 
 
@@ -144,8 +144,6 @@ parser.add_argument('--gpu_id', default='0', type=str,
 args = parser.parse_args()
 state = {k: v for k, v in args._get_kwargs()}
 
-# Validate dataset
-assert args.dataset == 'cifar10' or args.dataset == 'cifar100', 'Dataset can only be cifar10 or cifar100.'
 
 # Use CUDA
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
@@ -173,9 +171,9 @@ def main():
 
 
     # Data
-    print('==> Preparing dataset %s' % args.dataset)
+    print('==> Preparing dataset bach')
     transform_train = transforms.Compose([
-        transforms.Resize((32,32)),
+        transforms.Resize((224,224)),
         #transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor()
@@ -183,7 +181,7 @@ def main():
     ])
 
     transform_test = transforms.Compose([
-        transforms.Resize((32,32)),
+        transforms.Resize((224,224)),
         transforms.ToTensor()
         #transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
