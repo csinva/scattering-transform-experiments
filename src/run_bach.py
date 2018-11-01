@@ -173,17 +173,17 @@ def main():
     # Data
     print('==> Preparing dataset bach')
     transform_train = transforms.Compose([
+        transforms.Normalize(mean=(182.82091190656038, 157.3296963620186, 214.87577695210769), std=(38.087092807950555, 44.85998774545851, 22.939518040097095)),
         transforms.Resize((224,224)),
         #transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize((182.82091190656038, 157.3296963620186, 214.87577695210769), (38.087092807950555, 44.85998774545851, 22.939518040097095))
+        transforms.ToTensor()
     ])
 
     transform_test = transforms.Compose([
+        transforms.Normalize(mean=(182.82091190656038, 157.3296963620186, 214.87577695210769), std=(38.087092807950555, 44.85998774545851, 22.939518040097095)),
         transforms.Resize((224,224)),
-        transforms.ToTensor(),
-        transforms.Normalize((182.82091190656038, 157.3296963620186, 214.87577695210769), (38.087092807950555, 44.85998774545851, 22.939518040097095))
+        transforms.ToTensor()
     ])
 
     dataloader = BachDataset
