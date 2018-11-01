@@ -36,7 +36,7 @@ class BachDataset(Dataset):
             transform (callable, optional): Optional transform to be applied
                 on a sample.
         """
-        self.listdir = os.listdir(root)
+        self.listdir = [f for f in os.listdir(root) if not f.startswith('.')]
         self.root_dir = root
         self.classes = ['b','is','iv','n']
         self.train = train
@@ -45,15 +45,15 @@ class BachDataset(Dataset):
             self.im_per_class = 0.9 * len(self.listdir)/len(self.classes)
         else:
             self.im_per_class = 0.1 * len(self.listdir)/len(self.classes)
+        self.im_per_class = int(self.im_per_class)
 
     def __len__(self):
         if self.train:
-            return len(self.listdir) * 0.9
+            return int(len(self.listdir) * 0.9)
         else:
-            return len(self.listdir) * 0.1
+            return int(len(self.listdir) * 0.1)
 
     def __getitem__(self, idx):
-
         im_class = int(idx/self.im_per_class)
         if self.train:
             im_id = idx%self.im_per_class + 1
@@ -175,7 +175,7 @@ def main():
     # Data
     print('==> Preparing dataset %s' % args.dataset)
     transform_train = transforms.Compose([
-        transforms.Resize((224,224)),
+        transforms.Resize((32,32)),
         #transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor()
@@ -183,7 +183,7 @@ def main():
     ])
 
     transform_test = transforms.Compose([
-        transforms.Resize(224),
+        transforms.Resize((32,32)),
         transforms.ToTensor()
         #transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
@@ -244,7 +244,7 @@ def main():
         if "alexscat_fnum" in args.arch:
             model = models.__dict__[args.arch](num_classes=num_classes, j = args.ascat_j, l = args.ascat_l, extra_conv = args.extra_conv)
         else:
-            model = models.__dict__[args.arch](num_classes = num_classes,n=224)
+            model = models.__dict__[args.arch](num_classes = num_classes)
 
     if args.copy_num != 0 and 'alexnet_n2_copy2' in args.arch:
         best_alexnet = torch.load(args.copy_path+"/model_best.pth.tar")['state_dict']
@@ -270,8 +270,6 @@ def main():
     elif args.copy_num != 0 and 'res' in args.arch:
         best_alexnet = torch.load(args.copy_path+"/model_best.pth.tar")['state_dict']
         sd = model.state_dict()
-        #import pdb
-        #pdb.set_trace()
         sd['classifier.weight'] = best_alexnet['module.classifier.weight']
         sd['classifier.bias'] = best_alexnet['module.classifier.bias']
 
@@ -362,8 +360,6 @@ def train(trainloader, model, criterion, optimizer, epoch, use_cuda):
     top5 = AverageMeter()
 
     for batch_idx, (inputs, targets) in enumerate(trainloader):
-        import pdb
-        pdb.set_trace()
         if use_cuda:
             inputs, targets = inputs.cuda(), targets.cuda(async=True)
         inputs, targets = torch.autograd.Variable(inputs), torch.autograd.Variable(targets)
@@ -373,7 +369,7 @@ def train(trainloader, model, criterion, optimizer, epoch, use_cuda):
         loss = criterion(outputs, targets)
 
         # measure accuracy and record loss
-        prec1, prec5 = accuracy(outputs.data, targets.data, topk=(1, 5))
+        prec1, prec5 = accuracy(outputs.data, targets.data, topk=(1, 4))
         losses.update(loss.data[0], inputs.size(0))
         top1.update(prec1[0], inputs.size(0))
         top5.update(prec5[0], inputs.size(0))
@@ -417,7 +413,7 @@ def test(testloader, model, criterion, epoch, use_cuda):
         loss = criterion(outputs, targets)
 
         # measure accuracy and record loss
-        prec1, prec5 = accuracy(outputs.data, targets.data, topk=(1, 5))
+        prec1, prec5 = accuracy(outputs.data, targets.data, topk=(1, 4))
         losses.update(loss.data[0], inputs.size(0))
         top1.update(prec1[0], inputs.size(0))
         top5.update(prec5[0], inputs.size(0))
