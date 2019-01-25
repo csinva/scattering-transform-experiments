@@ -1,6 +1,5 @@
 # scattering transform
-- *code for development of scattering transform that is adaptive*
-- main google doc: https://docs.google.com/document/d/1J0JCGoZp8wmwWva6rtxEdkXm5uWJJtLZ04-QA3ya-t0/edit
+- *code for development of adaptive scattering transform that works with conv on small data*
 
 # setup
 - download cifar data by running download.py in data folder

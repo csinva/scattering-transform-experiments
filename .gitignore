@@ -17,3 +17,6 @@ pytorch-classification/data/cifar_100
 **.zip
 **.tif
 **.TIF
+**.pdf
+**.ai
+background/papers
